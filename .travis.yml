@@ -1,0 +1,56 @@
+# Use new container infrastructure to enable caching
+sudo: false
+
+language: ruby
+
+# Caching so the next build will be fast too.
+cache:
+  bundler: true
+  timeout: 1200
+  directories:
+  - $HOME/.stack
+  - $HOME/.agda
+  - $HOME/.local
+  - $HOME/agda-master
+  - $HOME/agda-stdlib-master
+  - $HOME/agda2html-master
+
+# Ensure necessary system libraries are present
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+      - libicu-dev
+
+# Configure recipients for notifications
+notifications:
+  email:
+    recipients:
+    - wen.kokke@ed.ac.uk
+    - wadler@inf.ed.ac.uk
+    on_success: never
+    on_failure: always
+
+before_install:
+# Download and unpack the stack executable
+- mkdir -p ~/.local/bin
+- export PATH=$HOME/.local/bin:$PATH
+- travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+# Download and install agda, agda-stdlib, and agda2html
+- make travis-setup
+
+script:
+- make
+
+before_deploy:
+- rm -rf .bundle
+- rm -rf vendor
+- make clean
+
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
+  edge: true
+  on:
+    branch: master
